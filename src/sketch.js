@@ -246,7 +246,7 @@ function draw() {
 }
 
 function mouseClicked() {
-  fullscreen(true)
+  // fullscreen(true)
   // alert(`${mouseX}, ${mouseY}`)
 
   if (!firstPointValid) {

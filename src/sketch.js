@@ -164,6 +164,7 @@ const addNextPoint = () => {
 
 
 function setup() {
+
   createCanvas(window.innerWidth, window.innerHeight);
 
 
@@ -245,6 +246,7 @@ function draw() {
 }
 
 function mouseClicked() {
+  fullscreen(true)
   // alert(`${mouseX}, ${mouseY}`)
 
   if (!firstPointValid) {

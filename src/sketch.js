@@ -159,7 +159,7 @@ let colorCounter = 0;
 let shapeCanvas;
 
 
-const MAXIMAL_MAX_TO_ADD_LUL = 150;
+const MAXIMAL_MAX_TO_ADD_LUL = 50;
 let maxToAdd                 = 1;
 let maxToAddStep             = 0.01;
 

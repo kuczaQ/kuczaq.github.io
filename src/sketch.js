@@ -1,5 +1,81 @@
 'use strict';
 
+alert("Draw a triangle by selecting it's edge points on the screen.\nTo select click with your mouse. ");
+
+//  █████   █████
+// ░░███   ░░███
+//  ░███    ░███   ██████   ████████   █████
+//  ░███    ░███  ░░░░░███ ░░███░░███ ███░░
+//  ░░███   ███    ███████  ░███ ░░░ ░░█████
+//   ░░░█████░    ███░░███  ░███      ░░░░███
+//     ░░███     ░░████████ █████     ██████
+
+const middleW = window.innerWidth / 2
+const middleH = window.innerHeight / 2
+
+
+// const LENGTH      = TAN_60 * innerHeight; // px
+const LENGTH      = window.innerWidth; // px
+const HALF_LENGTH = (LENGTH / 2); // px
+
+
+const A = Point(middleW - HALF_LENGTH, window.innerHeight);
+const B = Point(A.x + LENGTH, A.y);
+const C = Point(middleW, 0);
+
+const POINTS      = [];
+// const EDGE_POINTS = [A, B, C];
+let EDGE_POINTS = [];
+
+const MOUSE_POINTER_SIZE = 25;
+
+let firstClick = true;
+
+// let firstPoint      = undefined;
+// let firstPointValid = false;
+// let lastPoint = undefined;
+
+let firstPoint      = undefined;
+let firstPointValid = true;
+let lastPoint       = firstPoint
+
+
+let adding = true;
+
+
+let counter      = 0;
+let colorCounter = 0;
+
+let shapeCanvas = undefined;
+
+
+const MAXIMAL_MAX_TO_ADD_LUL = 3000;
+let maxToAdd                 = 400;
+// let maxToAddStep             = 50;
+// const MAXIMAL_MAX_TO_ADD_LUL = 50;
+// let maxToAdd     = 1;
+// let maxToAddStep = 0.01;
+
+let hideContour = false;
+
+let isShapeClosed = false;
+
+let clickedPoint = undefined;
+
+
+
+let F;
+let dotFader;
+let sizeFader;
+
+//  ███████████
+// ░░███░░░░░░█
+//  ░███   █ ░  █████ ████ ████████    ██████   █████
+//  ░███████   ░░███ ░███ ░░███░░███  ███░░███ ███░░
+//  ░███░░░█    ░███ ░███  ░███ ░███ ░███ ░░░ ░░█████
+//  ░███  ░     ░███ ░███  ░███ ░███ ░███  ███ ░░░░███
+//  █████       ░░████████ ████ █████░░██████  ██████
+
 function getTanFromDegrees(degrees) {
   return Math.tan(degrees * Math.PI / 180);
 }
@@ -7,7 +83,7 @@ function getTanFromDegrees(degrees) {
 const TAN_60 = getTanFromDegrees(60);
 const TAN_30 = getTanFromDegrees(30);
 
-const isInTriangle = (A, B, C, length, point) => {
+function isInTriangle(A, B, C, length, point) {
   const halfLength = length >> 1;
 
   let pointX = point.x;
@@ -36,151 +112,54 @@ const isInTriangle = (A, B, C, length, point) => {
   return false;
 }
 
-const iit = (point) => {
+function iit(point) {
   return isInTriangle(A, B, C, LENGTH, point);
 }
 
-const Point = (x, y) => ({x, y});
+function Point(x, y) {
+  return {x, y};
+}
 
-const middle = (p1, p2) => ({
-  x: (p1.x + p2.x) / 2,
-  y: (p1.y + p2.y) / 2,
-})
-
-//    █████████  ████
-//   ███░░░░░███░░███
-//  ███     ░░░  ░███   ██████    █████   █████
-// ░███          ░███  ░░░░░███  ███░░   ███░░
-// ░███          ░███   ███████ ░░█████ ░░█████
-// ░░███     ███ ░███  ███░░███  ░░░░███ ░░░░███
-//  ░░█████████  █████░░████████ ██████  ██████
-
-
-class Fader {
-  min;
-  max;
-  step;
-  current;
-  currentStep;
-  currentStepInc;
-
-  exponential;
-
-  constructor(start, min, max, step, exponential = false) {
-    this.min     = min;
-    this.max     = max;
-    this.step    = step;
-    this.current = start;
-
-    this.exponential = exponential;
-
-    this.resetVal = () => {
-      this.current = start;
-      return this;
-    };
-  }
-
-  val = () => {
-    let result = this.current;
-
-    if (this.currentStep) {
-
-      if (this.exponential)
-        this.currentStep += this.currentStep
-
-      this.current += this.currentStep;
-
-      if (this.current > this.max) {
-        this.current     = this.max;
-        this.currentStep = undefined;
-      } else if (this.current < this.min) {
-        this.current     = this.min;
-        this.currentStep = undefined;
-      }
-
-    }
-
-    return result;
-  }
-
-  fadeIn = () => {
-    this.currentStep = this.step;
-    return this;
-  };
-
-  fadeOut = () => {
-    this.currentStep = -this.step;
-    return this;
+function middle(p1, p2) {
+  return {
+    x: (p1.x + p2.x) / 2,
+    y: (p1.y + p2.y) / 2,
   };
 }
 
-//  █████   █████
-// ░░███   ░░███
-//  ░███    ░███   ██████   ████████   █████
-//  ░███    ░███  ░░░░░███ ░░███░░███ ███░░
-//  ░░███   ███    ███████  ░███ ░░░ ░░█████
-//   ░░░█████░    ███░░███  ░███      ░░░░███
-//     ░░███     ░░████████ █████     ██████
+function distance(p1, p2) {
+  return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
+}
 
-const middleW = window.innerWidth / 2
-const middleH = window.innerHeight / 2
+function isNearMouse(p) {
+  return distance(p, getMousePoint()) < MOUSE_POINTER_SIZE;
+}
 
+function getMousePoint() {
+  return Point(mouseX, mouseY);
+}
 
-// const LENGTH      = TAN_60 * innerHeight; // px
-const LENGTH      = window.innerWidth; // px
-const HALF_LENGTH = (LENGTH / 2); // px
+function canBeClosed() {
+  if (EDGE_POINTS.length < 3) return false;
 
+  return isNearMouse(EDGE_POINTS[0]);
+}
 
-const A = Point(middleW - HALF_LENGTH, window.innerHeight);
-const B = Point(A.x + LENGTH, A.y);
-const C = Point(middleW, 0);
+function isMouseOverEdgePoint() {
+  for (const p of EDGE_POINTS) {
+    if (isNearMouse(p)) {
+      return p;
+    }
+  }
 
-const POINTS      = [];
-const EDGE_POINTS = [A, B, C];
+  return undefined;
+}
 
+const getRandomInt = (max, min = 0) => Math.floor(Math.random() * (max - min)) + min;
 
-let firstClick      = true;
+const getRandomEdgePoint = () => EDGE_POINTS[getRandomInt(EDGE_POINTS.length)];
 
-// let firstPoint      = undefined;
-// let firstPointValid = false;
-// let lastPoint = undefined;
-
-let firstPoint      = middle(A, B);
-let firstPointValid = true;
-let lastPoint = firstPoint
-
-
-let adding          = true;
-
-
-let counter = 0;
-let colorCounter = 0;
-
-let shapeCanvas;
-
-
-const MAXIMAL_MAX_TO_ADD_LUL = 50;
-let maxToAdd                 = 1;
-let maxToAddStep             = 0.01;
-
-let hideContour = false;
-
-//  ██████████              █████                              ██████
-// ░░███░░░░░█             ░░███                              ███░░███
-//  ░███  █ ░  █████ █████ ███████   ████████   ██████       ░███ ░░░  █████ ████ ████████    ██████   █████
-//  ░██████   ░░███ ░░███ ░░░███░   ░░███░░███ ░░░░░███     ███████   ░░███ ░███ ░░███░░███  ███░░███ ███░░
-//  ░███░░█    ░░░█████░    ░███     ░███ ░░░   ███████    ░░░███░     ░███ ░███  ░███ ░███ ░███ ░░░ ░░█████
-//  ░███ ░   █  ███░░░███   ░███ ███ ░███      ███░░███      ░███      ░███ ░███  ░███ ░███ ░███  ███ ░░░░███
-//  ██████████ █████ █████  ░░█████  █████    ░░████████     █████     ░░████████ ████ █████░░██████  ██████
-
-const getRandomInt       = (max, min = 0) => Math.floor(Math.random() * (max - min)) + min;
-const getRandomEdgePoint = () => EDGE_POINTS[getRandomInt(3)];
-const getRandomPoint     = () => Point(getRandomInt(B.x, A.x), getRandomInt(B.y, C.y));
-
-const F         = new Fader(0, 0, 200, 2, 1 );
-const dotFader  = new Fader(0, 0, 200, 2).fadeIn();
-const sizeFader = new Fader(200, 5, 400, 4, 0).fadeOut();
-
+const getRandomPoint = () => Point(getRandomInt(B.x, A.x), getRandomInt(B.y, C.y));
 
 
 const PointMode = {
@@ -266,6 +245,74 @@ const addPoints = (n = 1) => {
 
   setPointsOnCanvas(newPoints);
 }
+
+//    █████████  ████
+//   ███░░░░░███░░███
+//  ███     ░░░  ░███   ██████    █████   █████
+// ░███          ░███  ░░░░░███  ███░░   ███░░
+// ░███          ░███   ███████ ░░█████ ░░█████
+// ░░███     ███ ░███  ███░░███  ░░░░███ ░░░░███
+//  ░░█████████  █████░░████████ ██████  ██████
+
+
+class Fader {
+  min;
+  max;
+  step;
+  current;
+  currentStep;
+  currentStepInc;
+
+  exponential;
+
+  constructor(start, min, max, step, exponential = false) {
+    this.min     = min;
+    this.max     = max;
+    this.step    = step;
+    this.current = start;
+
+    this.exponential = exponential;
+
+    this.resetVal = () => {
+      this.current = start;
+      return this;
+    };
+  }
+
+  val = () => {
+    let result = this.current;
+
+    if (this.currentStep) {
+
+      if (this.exponential)
+        this.currentStep += this.currentStep
+
+      this.current += this.currentStep;
+
+      if (this.current > this.max) {
+        this.current     = this.max;
+        this.currentStep = undefined;
+      } else if (this.current < this.min) {
+        this.current     = this.min;
+        this.currentStep = undefined;
+      }
+
+    }
+
+    return result;
+  }
+
+  fadeIn = () => {
+    this.currentStep = this.step;
+    return this;
+  };
+
+  fadeOut = () => {
+    this.currentStep = -this.step;
+    return this;
+  };
+}
+
 //  ██████   ██████            ███
 // ░░██████ ██████            ░░░
 //  ░███░█████░███   ██████   ████  ████████
@@ -280,7 +327,11 @@ function setup() {
 
   shapeCanvas = createGraphics(width, height);
 
-  frameRate(60)
+  // frameRate(60)
+
+  F         = new Fader(0, 0, 200, 2, 1);
+  dotFader  = new Fader(0, 0, 200, 2).fadeIn();
+  sizeFader = new Fader(200, 5, 400, 4, 0).fadeOut();
 
 
   setTimeout(() => hideContour = true, 1000);
@@ -289,28 +340,32 @@ function setup() {
 
 
 function draw() {
-  if (firstPoint) {
+  background(32, 72, 133);
+
+  if (isShapeClosed) {
     // fill(firstPointValid ? 0 : 255, firstPointValid ? 255 : 0, 0, dotFader.val());
     // fill(255, 0, 0, dotFader.val());
     // circle(firstPoint.x, firstPoint.y, firstPointValid ? sizeFader.val() : 30);
 
-    if (adding && firstPointValid) {
+    if (adding) {
+      console.log(maxToAdd)
       setTimeout(() => {
         addPoints(Math.floor(maxToAdd));
 
-        if (maxToAdd < MAXIMAL_MAX_TO_ADD_LUL)
+        if (maxToAdd < MAXIMAL_MAX_TO_ADD_LUL) {
           maxToAddStep += 0.001;
         maxToAdd += maxToAddStep;
+        }
       }, 0);
     }
   }
 
 
-  background(32, 72, 133);
+
   // background(0);
   // background(255);
 
-  noStroke();
+  // noStroke();
 
 
 
@@ -320,13 +375,25 @@ function draw() {
     F.fadeOut();
   }
 
-  fill(20, F.val());
+  // fill(20, F.val());
+  //
+  // beginShape();
+  // EDGE_POINTS.forEach(p => {
+  //   vertex(p.x, p.y);
+  // });
+  // endShape(CLOSE);
+
+  fill(0, 0);
 
   beginShape();
-  vertex(A.x, A.y);
-  vertex(B.x, B.y);
-  vertex(C.x, C.y);
-  endShape(CLOSE);
+  EDGE_POINTS.forEach(p => {
+    vertex(p.x, p.y);
+  });
+
+  if (isShapeClosed)
+    endShape(CLOSE);
+  else
+    endShape();
 
   // push();
   let pointLength = POINTS.length;
@@ -334,28 +401,83 @@ function draw() {
   image(shapeCanvas, 0, 0);
 
 
+  if (!isShapeClosed) {
+    push();
 
+    if (canBeClosed())
+      fill(255);
+    else
+      fill(0, 0);
+    stroke(255);
+    strokeWeight(3);
+    circle(mouseX, mouseY, MOUSE_POINTER_SIZE);
+
+    pop();
+  } else {
+    if (isMouseOverEdgePoint()) {
+      cursor('grab');
+    } else {
+      cursor(ARROW);
+    }
+  }
+
+  if (clickedPoint) {
+    clickedPoint.x = mouseX;
+    clickedPoint.y = mouseY;
+  }
+}
+
+function mousePressed() {
+  if (isShapeClosed) {
+    clickedPoint = isMouseOverEdgePoint();
+  }
+}
+
+function mouseReleased() {
+  clickedPoint = undefined;
 }
 
 function mouseClicked() {
   // fullscreen(true)
   // alert(`${mouseX}, ${mouseY}`)
 
-  if (!firstPointValid) {
-
-    firstPoint = Point(mouseX, mouseY);
-
-    firstPointValid = iit(firstPoint);
-    dotFader.resetVal().fadeIn();
-
-    if (firstPointValid) {
-      lastPoint = firstPoint;
-    }
-  } else {
-    adding = !adding;
+  if (canBeClosed()) {
+    isShapeClosed = true;
+    firstPoint    = middle(EDGE_POINTS[0], EDGE_POINTS[1]);
+    lastPoint     = firstPoint;
   }
+
+  if (!isShapeClosed) {
+    EDGE_POINTS.push(Point(mouseX, mouseY));
+  }
+
+  // if (!firstPointValid) {
+  //
+  //   firstPoint = Point(mouseX, mouseY);
+  //
+  //   firstPointValid = iit(firstPoint);
+  //   dotFader.resetVal().fadeIn();
+  //
+  //   if (firstPointValid) {
+  //     lastPoint = firstPoint;
+  //   }
+  // }
+  // else {
+  //   adding = !adding;
+  // }
 }
 
+function keyPressed() {
+  switch (key) {
+    case 'c':
+      shapeCanvas.clear();
+      break;
+    case 'r':
+      EDGE_POINTS = [];
+      isShapeClosed = false;
+      break;
+  }
+}
 
 
 
